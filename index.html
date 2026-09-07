@@ -7,6 +7,10 @@
 <body>
     <h1>AI Waste Classifier</h1>
     <p>Our AI will identify different types of waste.</p>
+    <h2 id="result">Waiting for camera...</h2>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script src="./script.js"></script>
 </body>
 </html>
 <!DOCTYPE html>
@@ -35,11 +39,39 @@
                 video: true
             });
 
-            video.srcObject = stream;
-        });
-    </script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-<script src="./script.js"></script>
-</body>
-</html>
+    video.srcObject = stream;
+
+    result.textContent = "Camera started! Looking for waste...";
+
+    predict();
+});
+
+// Ask the AI what it sees
+async function predict() {
+    if (!model) {
+        return;
+    }
+
+    const predictions = await model.predict(video);
+
+    // Find the prediction with the highest probability
+    let bestPrediction = predictions[0];
+
+    for (let i = 1; i < predictions.length; i++) {
+        if (predictions[i].probability > bestPrediction.probability) {
+            bestPrediction = predictions[i];
+        }
+    }
+
+    const percentage = (bestPrediction.probability * 100).toFixed(1);
+
+    result.textContent =
+        `${bestPrediction.className} — ${percentage}%`;
+
+    // Keep predicting
+    requestAnimationFrame(predict);
+}
+
+// Load the model when the webpage opens
+loadModel();
+
