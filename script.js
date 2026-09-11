@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const modelURL = "./Model/model.json";
     const metadataURL = "./Model/metadata.json";
 
-    let model;
+    let model = null;
 
     // Check that the HTML elements actually exist
     if (!video || !button || !result) {
@@ -17,53 +17,95 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Load the AI model
     async function loadModel() {
-        result.textContent = "Loading AI model...";
+        try {
+            result.textContent = "Loading AI model...";
 
-        model = await tmImage.load(modelURL, metadataURL);
+            model = await tmImage.load(modelURL, metadataURL);
 
-        result.textContent = "AI model loaded! Start the camera.";
-        console.log("AI model loaded!");
+            console.log("AI model loaded!", model);
+            result.textContent = "AI model loaded! Start the camera.";
+
+        } catch (error) {
+            console.error("MODEL LOAD ERROR:", error);
+            result.textContent = "Error loading AI model. Check the console.";
+        }
     }
 
     // Start the camera
     button.addEventListener("click", async () => {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true
-        });
 
-        video.srcObject = stream;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true
+            });
 
-        result.textContent = "Camera started! Looking for waste...";
+            video.srcObject = stream;
 
-        predict();
+            // Wait until the camera actually has video data
+            await video.play();
+
+            result.textContent = "Camera started! Identifying waste...";
+
+            // Make sure the AI model is ready
+            if (!model) {
+                result.textContent = "AI model is still loading...";
+                return;
+            }
+
+            predict();
+
+        } catch (error) {
+            console.error("CAMERA ERROR:", error);
+            result.textContent = "Camera error. Check the console.";
+        }
     });
 
     // Ask the AI what it sees
     async function predict() {
+
         if (!model) {
+            console.error("Prediction attempted before model loaded.");
             return;
         }
 
-        const predictions = await model.predict(video);
+        try {
 
-        let bestPrediction = predictions[0];
+            const predictions = await model.predict(video);
 
-        for (let i = 1; i < predictions.length; i++) {
-            if (predictions[i].probability > bestPrediction.probability) {
-                bestPrediction = predictions[i];
+            console.log("Predictions:", predictions);
+
+            // Start with the first prediction
+            let bestPrediction = predictions[0];
+
+            // Find the prediction with the highest probability
+            for (let i = 1; i < predictions.length; i++) {
+
+                if (
+                    predictions[i].probability >
+                    bestPrediction.probability
+                ) {
+                    bestPrediction = predictions[i];
+                }
             }
+
+            const percentage =
+                (bestPrediction.probability * 100).toFixed(1);
+
+            result.textContent =
+                `${bestPrediction.className} — ${percentage}%`;
+
+            // Predict again on the next animation frame
+            requestAnimationFrame(predict);
+
+        } catch (error) {
+
+            console.error("PREDICTION ERROR:", error);
+            result.textContent = "Prediction error. Check the console.";
+
         }
-
-        const percentage =
-            (bestPrediction.probability * 100).toFixed(1);
-
-        result.textContent =
-            `${bestPrediction.className} — ${percentage}%`;
-
-        requestAnimationFrame(predict);
     }
 
-    // Load the model
+    // Load the model when the webpage opens
     loadModel();
 
 });
