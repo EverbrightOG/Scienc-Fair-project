@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html>
 <head>
     <title>AI Waste Classifier</title>
@@ -7,71 +7,12 @@
 <body>
     <h1>AI Waste Classifier</h1>
     <p>Our AI will identify different types of waste.</p>
+    <p>Click the button below to start the camera and point your camera at a piece of waste.</p>
     <h2 id="result">Waiting for camera...</h2>
+    <video id="camera" width="640" height="480" autoplay></video>
+    <button id="start-button">Start Camera</button>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <script src="./script.js"></script>
 </body>
 </html>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>AI Waste Classifier</title>
-</head>
-
-<body>
-    <h1>AI Waste Classifier</h1>
-
-    <p>Point your camera at a piece of waste.</p>
-
-    <video id="camera" width="640" height="480" autoplay></video>
-
-    <br><br>
-
-    <button id="startCamera">Start Camera</button>
-
-    <script>
-        const video = document.getElementById("camera");
-        const button = document.getElementById("startCamera");
-
-        button.addEventListener("click", async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true
-            });
-
-    video.srcObject = stream;
-
-    result.textContent = "Camera started! Looking for waste...";
-
-    predict();
-});
-
-// Ask the AI what it sees
-async function predict() {
-    if (!model) {
-        return;
-    }
-
-    const predictions = await model.predict(video);
-
-    // Find the prediction with the highest probability
-    let bestPrediction = predictions[0];
-
-    for (let i = 1; i < predictions.length; i++) {
-        if (predictions[i].probability > bestPrediction.probability) {
-            bestPrediction = predictions[i];
-        }
-    }
-
-    const percentage = (bestPrediction.probability * 100).toFixed(1);
-
-    result.textContent =
-        `${bestPrediction.className} — ${percentage}%`;
-
-    // Keep predicting
-    requestAnimationFrame(predict);
-}
-
-// Load the model when the webpage opens
-loadModel();
-
