@@ -1,60 +1,69 @@
-const video = document.getElementById("camera");
-const button = document.getElementById("startCamera");
-const result = document.getElementById("result");
+document.addEventListener("DOMContentLoaded", () => {
 
-const modelURL = "./model/model.json";
-const metadataURL = "./model/metadata.json";
+    const video = document.getElementById("camera");
+    const button = document.getElementById("startCamera");
+    const result = document.getElementById("result");
 
-let model;
+    const modelURL = "./Model/model.json";
+    const metadataURL = "./Model/metadata.json";
 
-// Load the AI model
-async function loadModel() {
-    result.textContent = "Loading AI model...";
+    let model;
 
-    model = await tmImage.load(modelURL, metadataURL);
-
-    result.textContent = "AI model loaded! Start the camera.";
-    console.log("AI model loaded!");
-}
-
-// Start the camera
-button.addEventListener("click", async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: true
-    });
-
-    video.srcObject = stream;
-
-    result.textContent = "Camera started! Looking for waste...";
-
-    predict();
-});
-
-// Ask the AI what it sees
-async function predict() {
-    if (!model) {
+    // Check that the HTML elements actually exist
+    if (!video || !button || !result) {
+        console.error("Could not find one or more HTML elements.");
         return;
     }
 
-    const predictions = await model.predict(video);
+    // Load the AI model
+    async function loadModel() {
+        result.textContent = "Loading AI model...";
 
-    // Find the prediction with the highest probability
-    let bestPrediction = predictions[0];
+        model = await tmImage.load(modelURL, metadataURL);
 
-    for (let i = 1; i < predictions.length; i++) {
-        if (predictions[i].probability > bestPrediction.probability) {
-            bestPrediction = predictions[i];
-        }
+        result.textContent = "AI model loaded! Start the camera.";
+        console.log("AI model loaded!");
     }
 
-    const percentage = (bestPrediction.probability * 100).toFixed(1);
+    // Start the camera
+    button.addEventListener("click", async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true
+        });
 
-    result.textContent =
-        `${bestPrediction.className} — ${percentage}%`;
+        video.srcObject = stream;
 
-    // Keep predicting
-    requestAnimationFrame(predict);
-}
+        result.textContent = "Camera started! Looking for waste...";
 
-// Load the model when the webpage opens
-loadModel();
+        predict();
+    });
+
+    // Ask the AI what it sees
+    async function predict() {
+        if (!model) {
+            return;
+        }
+
+        const predictions = await model.predict(video);
+
+        let bestPrediction = predictions[0];
+
+        for (let i = 1; i < predictions.length; i++) {
+            if (predictions[i].probability > bestPrediction.probability) {
+                bestPrediction = predictions[i];
+            }
+        }
+
+        const percentage =
+            (bestPrediction.probability * 100).toFixed(1);
+
+        result.textContent =
+            `${bestPrediction.className} — ${percentage}%`;
+
+        requestAnimationFrame(predict);
+    }
+
+    // Load the model
+    loadModel();
+
+});
