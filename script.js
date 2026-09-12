@@ -36,7 +36,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: true
+                video: {
+                    facingMode: {
+                        ideal: "environment"
+                    }
+                }
             });
 
             video.srcObject = stream;
